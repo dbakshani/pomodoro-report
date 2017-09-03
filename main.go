@@ -10,6 +10,27 @@ import (
 	"time"
 )
 
+/**
+* This tool take a file containing pomodoro data in the following format, and generates a
+* report to stdout containing the date, daily total and weekly total of pomodoros.
+*
+* The expected format for the pomodoro data is:
+*
+*		20170901@1020 : p
+*		20170901@1024 : s
+*		20170901@1049 : p
+*		20170901@1054 : s
+*		20170901@1121 : p
+*		20170901@1147 : p
+*		20170901@1153 : s
+*		20170901@1508 : p
+*		20170901@1535 : p
+*
+* The times are ignored, as are lines that don't end with "p" (in my usage, "s" represents
+* a short break, and "b" represents a long break).
+*
+**/
+
 func main() {
 	args := os.Args
 	if len(args) != 2 {
@@ -37,8 +58,7 @@ func main() {
 		line := scanner.Text()
 		//fmt.Println(line)
 		parts := r.FindStringSubmatch(line)
-		//fmt.Printf("parts: %q\n", parts)
-		// only process lines that match the regex
+		// only process lines that match the regex; i.e. have pomodoro data
 		if len(parts) != 0 {
 			t := convertToTime(parts[1])
 			if val, ok := pomodoros[t]; ok {
@@ -48,20 +68,17 @@ func main() {
 				dates = append(dates, t.Format(time.RFC3339))
 			}
 		}
-
 	}
 	if err := scanner.Err(); err != nil {
 		fmt.Println("Error: ", err)
 		os.Exit(1)
 	}
 
-	var processingDate time.Time
-
 	sort.Strings(dates)
 
+	var processingDate time.Time
 	if len(dates) > 0 {
 		// find the earliest date from the provided file
-		//processingDate = convertToTime(dates[0])
 		processingDate.UnmarshalText([]byte(dates[0]))
 	} else {
 		fmt.Println("No pomodoro data found.")
@@ -69,27 +86,28 @@ func main() {
 	}
 
 	layout := "Mon 2006-01-02"
-	var tomorrow time.Time
+	var nextDay time.Time
 	var weeklyTotal int
 
 	// print report for each day from earliest date until today
 	for processingDate.Before(time.Now().UTC()) {
-		tomorrow = processingDate.Add(time.Hour * 24)
+		nextDay = processingDate.Add(time.Hour * 24)
 
 		weeklyTotal = weeklyTotal + pomodoros[processingDate]
 
-		// last day of current week
-		if processingDate.Weekday() > tomorrow.Weekday() {
+		// last day of current week or last day of data; print weekly total
+		if processingDate.Weekday() > nextDay.Weekday() ||
+			nextDay.After(time.Now().UTC()) {
 			fmt.Printf("%v: %v\t%v\n", processingDate.Format(layout), pomodoros[processingDate], weeklyTotal)
 			weeklyTotal = 0
 		} else {
 			fmt.Printf("%v: %v\n", processingDate.Format(layout), pomodoros[processingDate])
 		}
-		processingDate = tomorrow
+		processingDate = nextDay
 	}
 }
 
-// convertToTime return a Time object from the provided date string in yyyymmdd format.
+// convertToTime returns a Time object from the provided date string in "yyyymmdd" format.
 func convertToTime(date string) time.Time {
 	y, _ := strconv.Atoi(date[:4])
 	m, _ := strconv.Atoi(date[4:6])
