@@ -68,23 +68,24 @@ func main() {
 		os.Exit(2)
 	}
 
-	//	for _, date := range dates {
-	//		//y, _ := strconv.Atoi(date[:4])
-	//		//m, _ := strconv.Atoi(date[4:6])
-	//		//d, _ := strconv.Atoi(date[6:8])
-	//		//l, _ := time.LoadLocation("UTC")
-	//		//dt := time.Date(y, time.Month(m), d, 0, 0, 0, 0, l)
-	//		dt := convertToTime(date)
-	//		layout := "Mon 2006-01-02"
-	//
-	//		fmt.Printf("%v: %v\t%v\n", dt.Format(layout), pomodoros[date], nil)
-	//	}
+	layout := "Mon 2006-01-02"
+	var tomorrow time.Time
+	var weeklyTotal int
 
+	// print report for each day from earliest date until today
 	for processingDate.Before(time.Now().UTC()) {
-		//fmt.Printf("%v: %v\n", processingDate, pomodoroForDate(pomodoros, processingDate))
-		fmt.Printf("%v: %v\n", processingDate, pomodoros[processingDate])
+		tomorrow = processingDate.Add(time.Hour * 24)
 
-		processingDate = processingDate.Add(time.Hour * 24)
+		weeklyTotal = weeklyTotal + pomodoros[processingDate]
+
+		// last day of current week
+		if processingDate.Weekday() > tomorrow.Weekday() {
+			fmt.Printf("%v: %v\t%v\n", processingDate.Format(layout), pomodoros[processingDate], weeklyTotal)
+			weeklyTotal = 0
+		} else {
+			fmt.Printf("%v: %v\n", processingDate.Format(layout), pomodoros[processingDate])
+		}
+		processingDate = tomorrow
 	}
 }
 
