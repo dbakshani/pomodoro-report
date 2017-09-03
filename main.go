@@ -11,7 +11,7 @@ import (
 )
 
 /**
-* This tool take a file containing pomodoro data in the following format, and generates a
+* This tool takes a file containing pomodoro data in the following format, and generates a
 * report to stdout containing the date, daily total and weekly total of pomodoros.
 *
 * The expected format for the pomodoro data is:
